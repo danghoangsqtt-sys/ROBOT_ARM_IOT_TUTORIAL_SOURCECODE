@@ -1,0 +1,39 @@
+{
+    "folders": [
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-1",
+            "name": "BTH 4 - Giai doan 1 (Scanner)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-2",
+            "name": "BTH 4 - Giai doan 2 (CLI)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-3",
+            "name": "BTH 4 - Giai doan 3 (Nang cao)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-5",
+            "name": "BTH 5 - Python GUI"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-1",
+            "name": "BTH 6 - Giai doan 1 (Blynk 1 Servo)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-2",
+            "name": "BTH 6 - Giai doan 2 (Blynk 6 Khop)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-3",
+            "name": "BTH 6 - Giai doan 3 (Hoan thien)"
+        },
+        {
+            "path": ".",
+            "name": "Project Root (Docs & Prompt)"
+        }
+    ],
+    "settings": {
+        "platformio-ide.activateProjectOnTextEditorChange": true
+    }
+}
