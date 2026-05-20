@@ -31,6 +31,11 @@ Dưới đây là các linh kiện phần cứng được sử dụng trong giá
 
 ## ⚙️ 2. Sơ đồ kết nối (Wiring)
 
+<div align="center">
+  <img src="docs/images/wiring_diagram.png" alt="Sơ đồ kết nối phần cứng" width="700"/>
+  <p><i>Sơ đồ chi tiết kết nối các chân tín hiệu và nguồn điện</i></p>
+</div>
+
 Hệ thống sử dụng giao thức **I2C** để kết nối giữa ESP32 và PCA9685:
 
 *   **ESP32 `GPIO 21`** $\rightarrow$ PCA9685 `SDA`
