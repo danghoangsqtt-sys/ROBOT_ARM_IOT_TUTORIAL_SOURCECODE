@@ -14,25 +14,25 @@ Chào mừng đến với kho lưu trữ mã nguồn mẫu cho **Giáo trình Th
 Dưới đây là các linh kiện phần cứng được sử dụng trong giáo trình:
 
 <div align="center">
-  <img src="docs/images/overview_diagram.png" alt="Sơ đồ bố trí linh kiện" width="600"/>
+  <img src="docs/images/cac-thanh-phan-linh-kien.png" alt="Sơ đồ bố trí linh kiện" width="600"/>
   <p><i>Sơ đồ bố trí tổng thể các linh kiện của Cánh tay Robot</i></p>
 </div>
 
 ### Danh sách chi tiết:
 
-| Hình ảnh | Linh kiện | Chức năng chính |
-| :---: | :--- | :--- |
-| <img src="docs/images/esp32_devkit.png" width="150"/> | **ESP32 DevKit V1** | Vi điều khiển trung tâm, xử lý logic, đọc Serial và kết nối WiFi/Blynk. |
-| <img src="docs/images/pca9685.png" width="150"/> | **Module PCA9685** | Giao tiếp I2C, xuất xung PWM 16 kênh điều khiển cùng lúc nhiều Servo. |
-| <img src="docs/images/robot_arm.png" width="150"/> | **Cánh tay Robot 6DOF** | Cơ cấu chấp hành hợp kim nhôm, gồm 6 động cơ Servo MG996R/MG995. |
-| <img src="docs/images/power_supply.png" width="150"/> | **Nguồn Adapter 6V - 3A** | Cung cấp dòng điện đủ lớn cho 6 Servo hoạt động đồng thời mà không sập nguồn. |
+| Linh kiện | Chức năng chính |
+| :--- | :--- |
+| **ESP32 DevKit V1** | Vi điều khiển trung tâm, xử lý logic, đọc Serial và kết nối WiFi/Blynk. |
+| **Module PCA9685** | Giao tiếp I2C, xuất xung PWM 16 kênh điều khiển cùng lúc nhiều Servo. |
+| **Cánh tay Robot 6DOF** | Cơ cấu chấp hành hợp kim nhôm, gồm 6 động cơ Servo MG996R/MG995. |
+| **Nguồn Adapter 6V - 3A** | Cung cấp dòng điện đủ lớn cho 6 Servo hoạt động đồng thời mà không sập nguồn. |
 
 ---
 
 ## ⚙️ 2. Sơ đồ kết nối (Wiring)
 
 <div align="center">
-  <img src="docs/images/wiring_diagram.png" alt="Sơ đồ kết nối phần cứng" width="700"/>
+  <img src="docs/images/so-do-dau-noi-phan-cung.png" alt="Sơ đồ kết nối phần cứng" width="700"/>
   <p><i>Sơ đồ chi tiết kết nối các chân tín hiệu và nguồn điện</i></p>
 </div>
 
