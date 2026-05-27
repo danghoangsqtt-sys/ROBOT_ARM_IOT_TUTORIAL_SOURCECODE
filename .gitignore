@@ -3,3 +3,9 @@
 __pycache__/
 *.pyc
 .env
+
+# Vietnamese source code (belongs to 'main' branch, not 'english-version')
+robot-arm-source-code/
+
+# Translation helper script (local use only)
+translate.py
