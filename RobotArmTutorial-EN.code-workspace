@@ -1,0 +1,39 @@
+{
+    "folders": [
+        {
+            "path": "robot-arm-source-code-en/lab-4/stage-1",
+            "name": "Lab 4 - Stage 1 (I2C Scanner)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-4/stage-2",
+            "name": "Lab 4 - Stage 2 (Servo CLI)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-4/stage-3",
+            "name": "Lab 4 - Stage 3 (Smooth Motion)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-5",
+            "name": "Lab 5 - Python GUI"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-1",
+            "name": "Lab 6 - Stage 1 (Blynk 1 Servo)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-2",
+            "name": "Lab 6 - Stage 2 (Blynk 6 Joints)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-3",
+            "name": "Lab 6 - Stage 3 (Full IoT)"
+        },
+        {
+            "path": ".",
+            "name": "[Root] Docs & Prompt"
+        }
+    ],
+    "settings": {
+        "platformio-ide.activateProjectOnTextEditorChange": true
+    }
+}

@@ -48,42 +48,71 @@ The system uses the **I2C** protocol to connect the ESP32 and PCA9685:
 
 ## 📂 3. Project Structure
 
-The project is designed as a **Multi-root Workspace** in VS Code, divided into 3 major Practicals, each with 3 progressive stages:
+The project contains **two language versions** of the source code, each with a dedicated VS Code workspace:
+
+| Workspace File | Language | Description |
+| :--- | :--- | :--- |
+| **`RobotArmTutorial-EN.code-workspace`** | 🇬🇧 English | English-translated source code & comments |
+| **`RobotArmTutorial-VI.code-workspace`** | 🇻🇳 Vietnamese | Original Vietnamese source code & comments |
+| `RobotArmTutorial.code-workspace` | Both | Combined view (both versions) |
+
+Each version is organized as a **Multi-root Workspace** in VS Code, divided into 3 major Labs, each with 3 progressive stages:
 
 ```text
 ROBOT_ARM_IOT_TUTORIAL_SOURCECODE/
-├── RobotArmTutorial.code-workspace   <-- [OPEN THIS FILE IN VS CODE]
-├── robot-arm-source-code-en/         <-- [ENGLISH VERSION]
-│   ├── bai-thuc-hanh-4/              <-- C++ Programming (PlatformIO)
-│   │   ├── giai-doan-1/              (I2C Scanner)
-│   │   ├── giai-doan-2/              (Basic Servo Control, Serial CLI)
-│   │   └── giai-doan-3/              (Smooth move, simultaneous movement)
-│   ├── bai-thuc-hanh-5/              <-- Python GUI Programming
-│   │   ├── giai-doan-1/              (Basic Serial Communication)
-│   │   ├── giai-doan-2/              (Auto Pick-and-Place)
-│   │   └── giai-doan-3/              (Complete Tkinter GUI)
-│   └── bai-thuc-hanh-6/              <-- IoT Programming (Blynk)
-│       ├── giai-doan-1/              (WiFi connection, 1 joint control)
-│       ├── giai-doan-2/              (6 joints control, state synchronization)
-│       └── giai-doan-3/              (Optimization, Mobile App & Auto Reconnect)
+├── RobotArmTutorial-EN.code-workspace   ← [OPEN THIS for English version]
+├── RobotArmTutorial-VI.code-workspace   ← [OPEN THIS for Vietnamese version]
+├── robot-arm-source-code-en/            ← English Version
+│   ├── lab-4/                           ← C++ Programming (PlatformIO)
+│   │   ├── stage-1/                     (I2C Scanner)
+│   │   ├── stage-2/                     (Basic Servo Control, Serial CLI)
+│   │   └── stage-3/                     (Smooth move, simultaneous movement)
+│   ├── lab-5/                           ← Python GUI Programming
+│   │   ├── stage-1/                     (Basic Serial Communication)
+│   │   ├── stage-2/                     (Auto Pick-and-Place)
+│   │   └── stage-3/                     (Complete Tkinter GUI)
+│   └── lab-6/                           ← IoT Programming (Blynk)
+│       ├── stage-1/                     (WiFi connection, 1 joint control)
+│       ├── stage-2/                     (6 joints control, state synchronization)
+│       └── stage-3/                     (Optimization, Mobile App & Auto Reconnect)
+└── robot-arm-source-code/               ← Vietnamese Version (Bản Tiếng Việt)
+    ├── bai-thuc-hanh-4/                 ← Lập trình C++ (PlatformIO)
+    │   ├── giai-doan-1/                 (I2C Scanner)
+    │   ├── giai-doan-2/                 (Điều khiển Servo, Serial CLI)
+    │   └── giai-doan-3/                 (Chuyển động mượt, đồng thời)
+    ├── bai-thuc-hanh-5/                 ← Lập trình Python GUI
+    │   ├── giai-doan-1/                 (Giao tiếp Serial cơ bản)
+    │   ├── giai-doan-2/                 (Pick-and-Place tự động)
+    │   └── giai-doan-3/                 (GUI Tkinter hoàn chỉnh)
+    └── bai-thuc-hanh-6/                 ← Lập trình IoT (Blynk)
+        ├── giai-doan-1/                 (Kết nối WiFi, điều khiển 1 khớp)
+        └── giai-doan-3/                 (Hoàn thiện, Mobile App & Tự kết nối lại)
 ```
 
 ---
 
 ## 🚀 4. Usage Instructions
 
+### Step 1 — Choose your language version
+
+| Version | Workspace to open |
+| :--- | :--- |
+| 🇬🇧 **English** | `RobotArmTutorial-EN.code-workspace` |
+| 🇻🇳 **Vietnamese** | `RobotArmTutorial-VI.code-workspace` |
+
 ### For C/C++ Developers (PlatformIO)
 1. Install **Visual Studio Code** and the **PlatformIO IDE** Extension.
-2. Open VS Code $\rightarrow$ `File` $\rightarrow$ `Open Workspace from File...` $\rightarrow$ Select the **`RobotArmTutorial.code-workspace`** file.
+2. Open VS Code $\rightarrow$ `File` $\rightarrow$ `Open Workspace from File...` $\rightarrow$ Select the workspace file for your preferred language (see table above).
 3. In the Status Bar at the bottom, select the environment of the Stage you want to upload.
 4. Open the corresponding `platformio.ini` file and change `upload_port = COM9` to your actual COM port.
 5. Click the **Upload (right arrow)** button to flash the code to the ESP32.
 
 ### For Python GUI
 1. Install Python 3.8+.
-2. Open the Terminal at the `bai-thuc-hanh-5/giai-doan-3` directory.
+2. Open the Terminal at the `lab-5/stage-3` directory (English) or `bai-thuc-hanh-5/giai-doan-3` (Vietnamese).
 3. Install the required libraries: `pip install -r requirements.txt` (mainly `pyserial`).
 4. Run the GUI: `python main.py`
+
 
 ---
 

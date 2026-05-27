@@ -1,36 +1,71 @@
 {
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║  ROBOT ARM 6DOF — VS Code Multi-root Workspace              ║
+    // ║                                                              ║
+    // ║  ⚠️  This is a COMBINED workspace (both versions).          ║
+    // ║     For best experience, use the language-specific ones:    ║
+    // ║     • RobotArmTutorial-VI.code-workspace  (Tiếng Việt)     ║
+    // ║     • RobotArmTutorial-EN.code-workspace  (English)         ║
+    // ╚══════════════════════════════════════════════════════════════╝
     "folders": [
+        // ── VIETNAMESE VERSION (Bản Tiếng Việt) ──────────────────
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-1",
-            "name": "BTH 4 - Giai doan 1 (Scanner)"
+            "name": "[VI] BTH 4 - Giai doan 1 (I2C Scanner)"
         },
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-2",
-            "name": "BTH 4 - Giai doan 2 (CLI)"
+            "name": "[VI] BTH 4 - Giai doan 2 (Servo CLI)"
         },
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-4/giai-doan-3",
-            "name": "BTH 4 - Giai doan 3 (Nang cao)"
+            "name": "[VI] BTH 4 - Giai doan 3 (Chuyen dong muot)"
         },
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-5",
-            "name": "BTH 5 - Python GUI"
+            "name": "[VI] BTH 5 - Python GUI"
         },
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-1",
-            "name": "BTH 6 - Giai doan 1 (Blynk 1 Servo)"
-        },
-        {
-            "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-2",
-            "name": "BTH 6 - Giai doan 2 (Blynk 6 Khop)"
+            "name": "[VI] BTH 6 - Giai doan 1 (Blynk 1 Servo)"
         },
         {
             "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-3",
-            "name": "BTH 6 - Giai doan 3 (Hoan thien)"
+            "name": "[VI] BTH 6 - Giai doan 3 (Hoan thien IoT)"
+        },
+        // ── ENGLISH VERSION (Bản Tiếng Anh) ──────────────────────
+        {
+            "path": "robot-arm-source-code-en/lab-4/stage-1",
+            "name": "[EN] Lab 4 - Stage 1 (I2C Scanner)"
         },
         {
+            "path": "robot-arm-source-code-en/lab-4/stage-2",
+            "name": "[EN] Lab 4 - Stage 2 (Servo CLI)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-4/stage-3",
+            "name": "[EN] Lab 4 - Stage 3 (Smooth Motion)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-5",
+            "name": "[EN] Lab 5 - Python GUI"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-1",
+            "name": "[EN] Lab 6 - Stage 1 (Blynk 1 Servo)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-2",
+            "name": "[EN] Lab 6 - Stage 2 (Blynk 6 Joints)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-6/stage-3",
+            "name": "[EN] Lab 6 - Stage 3 (Full IoT)"
+        },
+        // ── PROJECT ROOT ──────────────────────────────────────────
+        {
             "path": ".",
-            "name": "Project Root (Docs & Prompt)"
+            "name": "[Root] Docs & Prompt"
         }
     ],
     "settings": {
