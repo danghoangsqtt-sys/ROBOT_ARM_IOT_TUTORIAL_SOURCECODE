@@ -25,7 +25,7 @@ Dưới đây là các linh kiện phần cứng được sử dụng trong giá
 | **ESP32 DevKit V1** | Vi điều khiển trung tâm, xử lý logic, đọc Serial và kết nối WiFi/Blynk. |
 | **Module PCA9685** | Giao tiếp I2C, xuất xung PWM 16 kênh điều khiển cùng lúc nhiều Servo. |
 | **Cánh tay Robot 6DOF** | Cơ cấu chấp hành hợp kim nhôm, gồm 6 động cơ Servo MG996R/MG995. |
-| **Nguồn Adapter 6V - 3A** | Cung cấp dòng điện đủ lớn cho 6 Servo hoạt động đồng thời mà không sập nguồn. |
+| **Nguồn Adapter 6V - 15A** | Cung cấp dòng điện đủ lớn cho 6 Servo MG996R/MG995 hoạt động đồng thời ở tải đầy đủ mà không sập nguồn. (**Không dùng nguồn 3A** — dòng điện khóa cứng (stall current) mỗi servo có thể lên đến 2.5A, tổng cộng ~15A cho 6 servo.) |
 
 ---
 
@@ -42,7 +42,7 @@ Hệ thống sử dụng giao thức **I2C** để kết nối giữa ESP32 và 
 *   **ESP32 `GPIO 22`** $\rightarrow$ PCA9685 `SCL`
 *   **ESP32 `GND`** $\rightarrow$ PCA9685 `GND`
 *   **ESP32 `3V3`** $\rightarrow$ PCA9685 `VCC` (Cấp nguồn logic)
-*   **Nguồn ngoài 6V/3A** $\rightarrow$ Cổng Terminal màu xanh của PCA9685 (Nguồn riêng cho Servo, chú ý **V+ / GND**).
+*   **Nguồn ngoài 6V/15A** $\rightarrow$ Cổng Terminal màu xanh của PCA9685 (Nguồn riêng cho Servo, chú ý **V+ / GND**). ⚠️ *Dùng ít nhất 15A — mỗi servo có thể kéo đến 2.5A khi bị khóa cứng.*
 
 ---
 
@@ -100,6 +100,85 @@ Firmware hỗ trợ các tập lệnh văn bản thuần túy (Text-based) qua c
 | **S** | Đổi tốc độ | `S <joint_id> <speed>` (Speed 1-10) | `OK` |
 | **A** | Di chuyển đồng thời | `A <a0> <a1> <a2> <a3> <a4> <a5>` | `OK` |
 | **W** | Chờ di chuyển xong | `W` | `DONE` |
+
+---
+
+## ⚡ 6. PWM & Điều khiển Servo — Tài liệu Kỹ thuật
+
+Phần này giải thích cách tín hiệu PWM được dùng để điều khiển servo thông qua module **PCA9685**.
+
+### 6.1 Nguyên lý tín hiệu PWM
+
+Servo RC tiêu chuẩn được điều khiển bằng tín hiệu **Điều chế Độ rộng Xung (PWM)**:
+
+| Tham số | Giá trị | Ghi chú |
+| :--- | :--- | :--- |
+| **Tần số PWM** | **50 Hz** | Chu kỳ = 20 ms (tiêu chuẩn cho tất cả servo RC) |
+| **Độ rộng xung tối thiểu** | **0.5 ms** | Tương ứng với góc **0°** |
+| **Độ rộng xung tối đa** | **2.5 ms** | Tương ứng với góc **180°** |
+| **Xung trung tính** | **1.5 ms** | Tương ứng với góc **90°** (vị trí Home) |
+
+```
+   Chu kỳ 20 ms (50 Hz)
+  ┌──────────────────────────────────────────┐
+  │                                          │
+──┘◄0.5ms►┐                         Cao = 0°  (SERVOMIN)
+  │       │
+──┘◄─────1.5ms─────►┐               Cao = 90° (trung tính)
+  │                  │
+──┘◄──────────2.5ms──────────►┐     Cao = 180°(SERVOMAX)
+```
+
+### 6.2 Độ phân giải Ticks của PCA9685
+
+PCA9685 hoạt động với **độ phân giải 12-bit** (4096 bước mỗi chu kỳ).
+Với tần số 50 Hz (chu kỳ 20 ms), mỗi tick = 20 ms ÷ 4096 ≈ **4.88 µs**.
+
+| Góc | Độ rộng xung | Ticks PCA9685 |
+| :---: | :---: | :---: |
+| **0°** | 0.5 ms | **102** ticks |
+| **90°** | 1.5 ms | **307** ticks |
+| **180°** | 2.5 ms | **512** ticks |
+
+> **Cách tính 102 và 512:**
+> - `SERVOMIN = 0.5 ms / (20 ms / 4096) = 0.5 / 0.00488 ≈ 102`
+> - `SERVOMAX = 2.5 ms / (20 ms / 4096) = 2.5 / 0.00488 ≈ 512`
+
+### 6.3 Công thức Góc → Độ rộng Xung
+
+Để di chuyển servo đến bất kỳ góc nào từ 0° đến 180°, firmware ánh xạ góc sang số ticks của PCA9685:
+
+```cpp
+// Ánh xạ tuyến tính: góc [0°, 180°] → số ticks [SERVOMIN, SERVOMAX]
+int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX);
+//  trong đó: SERVOMIN = 102   (xung 0.5 ms → 0°)
+//            SERVOMAX = 512   (xung 2.5 ms → 180°)
+
+pca9685.setPWM(kenh, 0, pulse);  // Gửi lệnh tới PCA9685
+```
+
+**Ví dụ tính toán:**
+
+| Góc mục tiêu | Công thức | Ticks | Độ rộng xung |
+| :---: | :--- | :---: | :---: |
+| 0° | `map(0,   0, 180, 102, 512)` | 102 | 0.50 ms |
+| 45° | `map(45,  0, 180, 102, 512)` | 204 | 0.99 ms |
+| 90° | `map(90,  0, 180, 102, 512)` | 307 | 1.50 ms |
+| 135° | `map(135, 0, 180, 102, 512)` | 409 | 2.00 ms |
+| 180° | `map(180, 0, 180, 102, 512)` | 512 | 2.50 ms |
+
+### 6.4 Yêu cầu Nguồn điện
+
+> [!WARNING]
+> **Tuyệt đối không cấp nguồn 6 servo từ nguồn 3A.**
+> Mỗi servo MG996R/MG995 có thể kéo đến **~2.5A khi bị khóa cứng (stall)**. Với 6 servo, dòng đỉnh có thể lên đến **~15A**. Nguồn yếu sẽ gây chuyển động giật cục, sụt áp và ESP32 bị reset.
+
+| Tình huống | Dòng điện tiêu thụ | Khuyến nghị |
+| :--- | :--- | :--- |
+| 1 servo (không tải) | ~150 mA | — |
+| 1 servo (đang chạy) | ~500–900 mA | — |
+| 1 servo (khóa cứng) | ~2.5 A | — |
+| **6 servo (tải đầy)** | **lên đến ~15 A** | **Dùng nguồn 6V / 15A** |
 
 ---
 
