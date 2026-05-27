@@ -21,6 +21,10 @@
             "name": "BTH 6 - Giai doan 1 (Blynk 1 Servo)"
         },
         {
+            "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-2",
+            "name": "BTH 6 - Giai doan 2 (6 Khop + Home + Status)"
+        },
+        {
             "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-3",
             "name": "BTH 6 - Giai doan 3 (Hoan thien IoT)"
         },
