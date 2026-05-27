@@ -10,7 +10,7 @@ Bạn là kỹ sư phần mềm nhúng, được giao nhiệm vụ soạn thảo
 - ESP32 DevKit V1 (ESP-WROOM-32S)
 - Module PCA9685 — IC điều khiển PWM 16 kênh qua I2C, địa chỉ 0x40
 - Cánh tay Robot 6DOF (6 servo MG995/MG996, khung hợp kim nhôm)
-- Nguồn ngoài 5V–6V / 3A cho servo
+- Nguồn ngoài 6V / 15A cho servo (lưu ý: mỗi servo MG995/MG996 có thể kéo đến 2.5A khi khóa cứng — 6 servo tổng cộng lên đến ~15A)
 - Kết nối: SDA → GPIO 21, SCL → GPIO 22, GND chung, VCC → 3V3
 
 **Thông số 6 khớp Robot:**
