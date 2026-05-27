@@ -25,7 +25,7 @@ Below are the hardware components used in the course:
 | **ESP32 DevKit V1** | Central microcontroller, logic processing, Serial reading, and WiFi/Blynk connection. |
 | **PCA9685 Module** | I2C communication, outputs 16-channel PWM to control multiple Servos simultaneously. |
 | **6DOF Robot Arm** | Aluminum alloy actuator mechanism, includes 6 MG996R/MG995 Servo motors. |
-| **6V - 3A Power Adapter** | Provides sufficient current for 6 Servos to operate simultaneously without power drops. |
+| **6V - 15A Power Adapter** | Provides sufficient current for all 6 MG996R/MG995 Servos to operate simultaneously under full load without voltage drops. (**Do not use a 3A supply** — peak stall current per servo can reach 2.5A, totalling up to ~15A for 6 servos.) |
 
 ---
 
@@ -42,7 +42,7 @@ The system uses the **I2C** protocol to connect the ESP32 and PCA9685:
 *   **ESP32 `GPIO 22`** $\rightarrow$ PCA9685 `SCL`
 *   **ESP32 `GND`** $\rightarrow$ PCA9685 `GND`
 *   **ESP32 `3V3`** $\rightarrow$ PCA9685 `VCC` (Logic power supply)
-*   **External Power 6V/3A** $\rightarrow$ Green Terminal of PCA9685 (Dedicated power for Servos, note **V+ / GND**).
+*   **External Power 6V/15A** $\rightarrow$ Green Terminal of PCA9685 (Dedicated power for Servos, note **V+ / GND**). ⚠️ *Use at least 15A — each servo can draw up to 2.5A at stall.*
 
 ---
 
@@ -129,6 +129,85 @@ The firmware supports plain text-based commands via the Serial port at a baud ra
 | **S** | Set speed | `S <joint_id> <speed>` (Speed 1-10) | `OK` |
 | **A** | Move simultaneously | `A <a0> <a1> <a2> <a3> <a4> <a5>` | `OK` |
 | **W** | Wait for movement | `W` | `DONE` |
+
+---
+
+## ⚡ 6. PWM & Servo Control — Technical Reference
+
+This section explains how PWM signals are used to control the servo motors via the **PCA9685** module.
+
+### 6.1 PWM Signal Basics
+
+A standard RC servo motor is controlled by a **Pulse Width Modulated (PWM)** signal:
+
+| Parameter | Value | Notes |
+| :--- | :--- | :--- |
+| **PWM Frequency** | **50 Hz** | Period = 20 ms (standard for all RC servos) |
+| **Min Pulse Width** | **0.5 ms** | Corresponds to **0°** |
+| **Max Pulse Width** | **2.5 ms** | Corresponds to **180°** |
+| **Neutral Pulse** | **1.5 ms** | Corresponds to **90°** (home position) |
+
+```
+   20 ms period (50 Hz)
+  ┌──────────────────────────────────────────┐
+  │                                          │
+──┘◄0.5ms►┐                         High = 0°  (SERVOMIN)
+  │       │
+──┘◄─────1.5ms─────►┐               High = 90° (midpoint)
+  │                  │
+──┘◄──────────2.5ms──────────►┐     High = 180°(SERVOMAX)
+```
+
+### 6.2 PCA9685 Tick Resolution
+
+The PCA9685 operates at **12-bit resolution** (4096 steps per period).
+With a 50 Hz frequency (20 ms period), each tick = 20 ms ÷ 4096 ≈ **4.88 µs**.
+
+| Angle | Pulse Width | PCA9685 Ticks (SERVOMIN/MAX) |
+| :---: | :---: | :---: |
+| **0°** | 0.5 ms | **102** ticks |
+| **90°** | 1.5 ms | **307** ticks |
+| **180°** | 2.5 ms | **512** ticks |
+
+> **How 102 and 512 are derived:**
+> - `SERVOMIN = 0.5 ms / (20 ms / 4096) = 0.5 / 0.00488 ≈ 102`
+> - `SERVOMAX = 2.5 ms / (20 ms / 4096) = 2.5 / 0.00488 ≈ 512`
+
+### 6.3 Angle → Pulse Width Formula
+
+To move a servo to any angle between 0° and 180°, the firmware maps the angle to a PCA9685 tick count:
+
+```cpp
+// Linear mapping: angle [0°, 180°] → tick count [SERVOMIN, SERVOMAX]
+int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX);
+//  where:  SERVOMIN = 102   (0.5 ms pulse → 0°)
+//          SERVOMAX = 512   (2.5 ms pulse → 180°)
+
+pca9685.setPWM(channel, 0, pulse);  // Send to PCA9685
+```
+
+**Example calculations:**
+
+| Target Angle | Formula | Pulse (ticks) | Pulse Width |
+| :---: | :--- | :---: | :---: |
+| 0° | `map(0,   0, 180, 102, 512)` | 102 | 0.50 ms |
+| 45° | `map(45,  0, 180, 102, 512)` | 204 | 0.99 ms |
+| 90° | `map(90,  0, 180, 102, 512)` | 307 | 1.50 ms |
+| 135° | `map(135, 0, 180, 102, 512)` | 409 | 2.00 ms |
+| 180° | `map(180, 0, 180, 102, 512)` | 512 | 2.50 ms |
+
+### 6.4 Power Supply Requirement
+
+> [!WARNING]
+> **Never power all 6 servos from a 3A supply.**
+> Each MG996R/MG995 servo can draw up to **~2.5A at stall**. With 6 servos, peak current demand can reach **~15A**. Under-powered servos will cause erratic movement, voltage drops, and ESP32 resets.
+
+| Config | Current Draw | Recommendation |
+| :--- | :--- | :--- |
+| 1 servo (idle) | ~150 mA | — |
+| 1 servo (moving) | ~500–900 mA | — |
+| 1 servo (stall) | ~2.5 A | — |
+| **6 servos (full load)** | **up to ~15 A** | **Use 6V / 15A supply** |
 
 ---
 
