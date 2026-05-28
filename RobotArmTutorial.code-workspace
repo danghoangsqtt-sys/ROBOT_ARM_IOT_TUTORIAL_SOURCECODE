@@ -33,6 +33,26 @@
             "path": "robot-arm-source-code/bai-thuc-hanh-6/giai-doan-3",
             "name": "[VI] BTH 6 - Giai doan 3 (Hoan thien IoT)"
         },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-1",
+            "name": "[VI] BTH 7 - Giai doan 1 (WiFi WebSocket)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-2",
+            "name": "[VI] BTH 7 - Giai doan 2 (Web GUI 6 Khop)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-3",
+            "name": "[VI] BTH 7 - Giai doan 3 (WiFiManager + Pose)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-8/giai-doan-1/web-serial-gui",
+            "name": "[VI] BTH 8 - Giai doan 1 (Web Serial GUI)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-8/giai-doan-2",
+            "name": "[VI] BTH 8 - Giai doan 2 (3D Digital Twin)"
+        },
         // ── ENGLISH VERSION (Bản Tiếng Anh) ──────────────────────
         {
             "path": "robot-arm-source-code-en/lab-4/stage-1",
@@ -61,6 +81,18 @@
         {
             "path": "robot-arm-source-code-en/lab-6/stage-3",
             "name": "[EN] Lab 6 - Stage 3 (Full IoT)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-7/stage-1",
+            "name": "[EN] Lab 7 - Stage 1 (WiFi WebSocket)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-7/stage-2",
+            "name": "[EN] Lab 7 - Stage 2 (Web GUI 6 Joints)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-7/stage-3",
+            "name": "[EN] Lab 7 - Stage 3 (WiFiManager + Pose)"
         },
         // ── PROJECT ROOT ──────────────────────────────────────────
         {

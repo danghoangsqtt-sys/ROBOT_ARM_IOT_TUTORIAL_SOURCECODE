@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robotic Arm Controller v1.0</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>Robotic Arm Controller v1.0</h1>
+            <div class="connection-status">
+                <select id="connectionMode" class="btn" style="background:#222; margin-right: 5px;">
+                    <option value="serial">🔌 Serial Port</option>
+                    <option value="rest">🌐 REST API</option>
+                </select>
+                
+                <div id="serialControls" style="display: inline-flex; align-items: center; margin-right: 5px;">
+                    <select id="baudRateSelect" class="btn" style="background:#222;">
+                        <option value="9600">9600 baud</option>
+                        <option value="115200" selected>115200 baud</option>
+                    </select>
+                </div>
+
+                <div id="restControls" style="display: none; align-items: center; margin-right: 5px;">
+                    <input type="text" id="apiUrlInput" class="btn" style="background:#222; text-align: left; font-weight: normal; width: 180px;" placeholder="http://192.168.4.1" value="http://192.168.4.1">
+                </div>
+
+                <span class="indicator disconnected" id="connIndicator"></span>
+                <button id="connectBtn" class="btn">Connect Device</button>
+                <button id="settingsBtn" class="btn">⚙️ Settings</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel visualizer-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h2 style="border:none; padding:0; margin:0;">3D Visualization</h2>
+                    <div class="zoom-controls">
+                        <button class="btn" id="btnZoomIn">➕ Zoom In</button>
+                        <button class="btn" id="btnZoomOut">➖ Zoom Out</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                </div>
+            </div>
+            
+            <div class="panel controls-panel">
+                <h2>Manual Controls</h2>
+                <div class="sliders-container" id="sliders">
+                    <!-- Sliders injected via JS -->
+                </div>
+                
+                <div class="global-actions">
+                    <button class="btn btn-warning" id="btnHome">HOME ALL</button>
+                    <button class="btn btn-danger" id="btnStop">STOP</button>
+                    <button class="btn btn-primary" id="btnSync">SYNC</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel bottom-panel">
+            <div class="sequence-recorder">
+                <h2>Sequence Recorder</h2>
+                <div class="recorder-controls">
+                    <button class="btn" id="btnRecord">⏺ Record</button>
+                    <button class="btn" id="btnPlay">▶ Play</button>
+                    <button class="btn" id="btnStopSeq">⏹ Stop</button>
+                    <button class="btn" id="btnAddFrame">Add Frame</button>
+                </div>
+                <div class="sequence-list" id="sequenceList">
+                    <!-- Frames show here -->
+                </div>
+            </div>
+            
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="grid-container" id="quickActionGrid">
+                    <!-- 10 buttons injected via JS -->
+                </div>
+            </div>
+
+            <div class="console-panel">
+                <h2>Command Console</h2>
+                <div id="consoleOutput" class="console-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px; color: var(--accent);">Joint Configuration</h2>
+            <div id="configForm"></div>
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-danger" id="btnCancelConfig">Cancel</button>
+                <button class="btn btn-primary" id="btnSaveConfig" style="color:#000;">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

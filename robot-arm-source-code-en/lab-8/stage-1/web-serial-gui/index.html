@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robotic Arm - Web Serial GUI</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>Robotic Arm - Web Serial GUI</h1>
+            <div class="connection-status">
+                <div id="serialControls" style="display: inline-flex; align-items: center; margin-right: 5px;">
+                    <select id="baudRateSelect" class="btn" style="background:#222;">
+                        <option value="9600">9600 baud</option>
+                        <option value="115200" selected>115200 baud</option>
+                    </select>
+                </div>
+                <span class="indicator disconnected" id="connIndicator"></span>
+                <button id="connectBtn" class="btn">Connect via USB</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel controls-panel">
+                <h2>Manual Controls</h2>
+                <div class="sliders-container" id="sliders">
+                    <!-- Sliders injected via JS -->
+                </div>
+                
+                <div class="global-actions">
+                    <button class="btn btn-warning" id="btnHome">HOME ALL</button>
+                    <button class="btn btn-danger" id="btnStop">STOP</button>
+                    <button class="btn btn-primary" id="btnSync">SYNC</button>
+                </div>
+            </div>
+
+            <div class="panel bottom-panel">
+                <div class="console-panel">
+                    <h2>Command Console</h2>
+                    <div id="consoleOutput" class="console-output"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

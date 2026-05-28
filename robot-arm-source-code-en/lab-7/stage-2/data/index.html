@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Arm 6DOF — Web Controller</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">&#x1F916; <span>Robot Arm</span> Web Send</div>
+      <div id="ws-status" class="badge disconnected">
+        <span class="dot"></span>
+        <span id="ws-label">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== NOI DUNG CHINH ===== -->
+  <main>
+
+    <!-- Card thong tin -->
+    <div class="info-card">
+      <p>&#x1F4BB; <strong>LAB 7 - STAGE 2</strong>:
+        Web Send dieu khien Robot Arm 6DOF qua WiFi LAN (WebSocket).
+        No software installation required, just open the browser.
+      </p>
+    </div>
+
+    <!-- Grid 6 card servo -->
+    <div class="servo-grid" id="servo-grid">
+      <!-- Duoc tao automatically boi JavaScript -->
+    </div>
+
+    <!-- Panel Button chuc nang -->
+    <div class="action-panel">
+      <button class="btn btn-home" onclick="sendHome()">
+        &#x1F3E0; HOME (All)
+      </button>
+      <button class="btn btn-status" onclick="sendStatus()">
+        &#x1F4CA; STATUS
+      </button>
+      <button class="btn btn-stop" onclick="sendStop()">
+        &#x26D4; EMERGENCY STOP
+      </button>
+    </div>
+
+    <!-- Panel log giao tiep -->
+    <div class="log-section">
+      <div class="log-header">
+        <span>&#x1F4DC; Log giao tiep</span>
+        <button class="btn-clear" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="log-panel"></div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

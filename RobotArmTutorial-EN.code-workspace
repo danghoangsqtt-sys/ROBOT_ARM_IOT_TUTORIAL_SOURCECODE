@@ -29,6 +29,26 @@
             "name": "Lab 6 - Stage 3 (Full IoT)"
         },
         {
+            "path": "robot-arm-source-code-en/lab-7/stage-1",
+            "name": "Lab 7 - Stage 1 (WiFi WebSocket)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-7/stage-2",
+            "name": "Lab 7 - Stage 2 (Web GUI 6 Joints)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-7/stage-3",
+            "name": "Lab 7 - Stage 3 (WiFiManager + Pose)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-8/stage-1",
+            "name": "Lab 8 - Stage 1 (Web Serial API)"
+        },
+        {
+            "path": "robot-arm-source-code-en/lab-8/stage-2",
+            "name": "Lab 8 - Stage 2 (3D Digital Twin + REST API)"
+        },
+        {
             "path": ".",
             "name": "[Root] Docs & Prompt"
         }
