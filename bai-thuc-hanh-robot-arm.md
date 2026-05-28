@@ -2231,3 +2231,605 @@ Tiếp tục sử dụng firmware từ Giai đoạn 2 (không cần thay đổi 
 3. Xây dựng hệ thống MQTT (thay thế BLYNK) để điều khiển robot từ bất kỳ đâu trên Internet.
 
 4. Triển khai điều khiển đồng thời từ cả Serial lẫn IoT với cơ chế ưu tiên: lệnh Serial được ưu tiên cao hơn, IoT chỉ hoạt động khi không có lệnh Serial trong 5 giây.
+
+**7. Bài thực hành 7: Điều khiển Servo thông qua Web GUI (ESP32 Web Server)**
+
+**a. Mục tiêu**
+
+- Đáp ứng CĐR 2.1 và 2.2 môn Mạng IoT (ĐVT 2.8.7); CĐR 2.1 và 2.2 môn Kiến trúc và giao thức trong IoT (ĐVT 2.10.7); CĐR 2.1 và 2.2 môn Các hệ thống và giải pháp IoT tiên tiến (ĐVT 2.11.7); CĐR 2.1 và 2.2 môn IoT và ứng dụng (ĐCN 2.3.5), cụ thể:
+
++ Thiết kế và triển khai được mô hình IoT điều khiển robot cánh tay qua trình duyệt Web trên mạng LAN.
+
++ Hiểu nguyên lý giao thức WebSocket và so sánh được với HTTP truyền thống trong bối cảnh điều khiển thời gian thực.
+
++ Xây dựng được Web Server trên ESP32 sử dụng thư viện ESPAsyncWebServer, phục vụ giao diện HTML/JS/CSS cho trình duyệt.
+
++ Phân biệt được hai phương pháp lưu trữ nội dung Web trên ESP32: PROGMEM (nhúng vào firmware) và SPIFFS (hệ thống tệp Flash riêng biệt).
+
++ Xây dựng được giao diện Web GUI hoàn chỉnh điều khiển 6 khớp robot bằng thanh trượt, nút chức năng và vùng log trên trình duyệt.
+
++ Tích hợp WiFiManager để cấu hình WiFi qua Captive Portal, không cần hardcode SSID/mật khẩu.
+
++ Nâng cấp giao thức WebSocket từ plain-text lên JSON, tích hợp tính năng lưu/tải tư thế (Pose) vào bộ nhớ Flash NVS.
+
++ So sánh được ba kiến trúc điều khiển robot: Serial USB (Bài 4-5), IoT Cloud (Bài 6) và Web LAN (Bài 7).
+
+**b. Các bước tiến hành**
+
+Bài thực hành 7 được triển khai qua ba giai đoạn tiệm tiến. Mỗi giai đoạn mở rộng từ kết quả của giai đoạn trước, giúp người học nắm vững từng lớp kiến thức về lập trình Web Server trên vi điều khiển.
+
+**Bảng 7.1.** Phân bổ nội dung cụ thể trong từng giai đoạn của bài thực hành 7
+
+| **Giai đoạn**                          | **Nội dung chính**                       | **Kết quả đạt được**                                  |
+|----------------------------------------|------------------------------------------|-------------------------------------------------------|
+| GĐ1: WiFi + WebSocket cơ bản          | ESP32 WiFi STA + WebSocket + 1 servo     | Điều khiển 1 khớp qua trình duyệt, giao thức plain-text |
+| GĐ2: Web GUI 6 khớp (SPIFFS)          | SPIFFS filesystem + Web GUI HTML/JS/CSS  | Giao diện hoàn chỉnh điều khiển 6 khớp qua trình duyệt   |
+| GĐ3: WiFiManager + JSON + Pose        | WiFiManager + ArduinoJson + NVS Flash    | Cấu hình WiFi tự động, lưu/tải 5 tư thế từ Flash       |
+
+**Giai đoạn 1: WiFi Station + WebSocket cơ bản (1 servo, PROGMEM)**
+
+Giai đoạn này tập trung vào việc cấu hình ESP32 kết nối WiFi ở chế độ Station (STA), khởi tạo Web Server bất đồng bộ và xử lý lệnh điều khiển 1 servo qua giao thức WebSocket. Trang HTML được nhúng trực tiếp vào firmware bằng PROGMEM, không cần hệ thống tệp SPIFFS.
+
+**Bước 1: Khởi tạo dự án**
+
+- Mở VS Code, tạo project PlatformIO mới đặt tên RobotArm\_WebGUI\_GD1. Mở file platformio.ini, cấu hình:
+
+[env:esp32dev]
+
+platform = espressif32
+
+board = esp32dev
+
+framework = arduino
+
+upload\_speed = 921600
+
+monitor\_speed = 115200
+
+upload\_port = COM9 ; doi thanh COM port thuc te
+
+lib\_deps =
+
+esphome/AsyncTCP
+
+ottowinter/ESPAsyncWebServer-esphome
+
+adafruit/Adafruit PWM Servo Driver Library
+
+**Bước 2: Xác định modul, linh kiện cần dùng**
+
+Sử dụng hệ thống phần cứng đã kết nối từ Bài thực hành 4 (ESP32 + PCA9685 + Robot Arm 6DOF). Đảm bảo ESP32 trong vùng phủ sóng WiFi.
+
+**Bước 3: Kết nối các modul, linh kiện**
+
+Giữ nguyên kết nối phần cứng từ Bài thực hành 4.
+
+**Bước 4: Viết chương trình**
+
+> **Ghi chú về thư viện:** Bài này sử dụng thư viện ESPAsyncWebServer (HTTP Server bất đồng bộ) và AsyncTCP (TCP bất đồng bộ), khác với WebServer mặc định của Arduino vì không chặn (blocking) vòng lặp loop(). Điều này cho phép ESP32 xử lý nhiều client đồng thời mà không bị treo.
+
+- Cấu trúc chương trình bao gồm 2 file trong thư mục src/:
+
++ src/index\_html.h — chứa chuỗi HTML được khai báo bằng PROGMEM (lưu trong Flash, tiết kiệm RAM). Sử dụng cú pháp C++11 raw string literal R"rawhtml(...)rawhtml" để viết HTML nhiều dòng mà không cần escape ký tự đặc biệt.
+
++ src/main.cpp — file chính: khởi tạo WiFi, PCA9685, WebSocket handler và HTTP Server.
+
+- Cơ sở lý thuyết về WebSocket:
+
++ HTTP truyền thống hoạt động theo mô hình request-response: client gửi yêu cầu, server trả lời, rồi đóng kết nối. Với điều khiển thời gian thực (kéo thanh trượt liên tục), mỗi lần kéo phải tạo kết nối mới → độ trễ cao, tốn tài nguyên.
+
++ WebSocket thiết lập một kênh truyền hai chiều (full-duplex) liên tục giữa client và server. Sau khi bắt tay (handshake) qua HTTP, kết nối được giữ mở → client và server có thể gửi dữ liệu bất kỳ lúc nào mà không cần tạo kết nối mới → độ trễ cực thấp, phù hợp điều khiển thời gian thực.
+
++ Trong bài này, ESP32 đóng vai trò WebSocket Server tại đường dẫn /ws. Trình duyệt (client) kết nối bằng new WebSocket("ws://\<IP ESP32\>/ws") và gửi lệnh plain-text giống giao thức Serial ở Bài 4-5.
+
+- Sinh viên tạo file src/index\_html.h chứa trang HTML nhúng (PROGMEM). Trang bao gồm: 1 thanh trượt điều khiển khớp J0 (Base), 2 nút HOME và STOP, vùng hiển thị log, và mã JavaScript kết nối WebSocket tự động.
+
+- Sinh viên tạo file src/main.cpp. Chương trình thực hiện: khởi tạo Serial → PCA9685 → WiFi Station → WebSocket handler → HTTP Server phục vụ trang HTML từ PROGMEM.
+
+- Luồng dữ liệu: Trình duyệt → WebSocket → ESP32 → PCA9685 → Servo. Cụ thể: khi người dùng kéo thanh trượt trên trang web, JavaScript gửi lệnh "M 0 \<angle\>" qua WebSocket. ESP32 nhận, phân tích lệnh trong hàm parseAndExecute(), gọi servoWrite() để chuyển đổi góc → xung PWM và ghi vào PCA9685. ESP32 phản hồi "OK" về trình duyệt.
+
+**Bước 5: Vận hành và kiểm thử**
+
+- Biên dịch và nạp firmware (Ctrl+Alt+U). Mở Serial Monitor (115200 baud). Kết quả mong đợi:
+
++ "=== BTH 7 - GIAI DOAN 1: WiFi WebSocket ===" → "[WiFi] Dang ket noi toi SSID: ..." → "[WiFi] Ket noi thanh cong!" → "[WiFi] Dia chi IP: 192.168.x.x"
+
+- Mở trình duyệt (Chrome, Edge, Firefox) trên máy tính hoặc điện thoại cùng mạng WiFi, nhập địa chỉ IP hiển thị trên Serial Monitor.
+
+- Trang web hiển thị: thanh trượt khớp J0 (0°–180°), nút HOME, nút STOP, vùng log.
+
+- Thanh trạng thái hiển thị "✅ Da ket noi WebSocket" (màu xanh).
+
+- Kéo thanh trượt → quan sát đế robot xoay theo. Vùng log hiển thị: "→ Gui: M 0 45" và "← ESP32: OK".
+
+- Nhấn HOME → khớp J0 về 90°. Nhấn STOP → robot dừng.
+
+- Mở thêm 1 tab trình duyệt khác cùng IP → cả hai tab đều có thể điều khiển robot (WebSocket hỗ trợ nhiều client).
+
+**Bước 6: Rút ra nhận xét, kết luận**
+
+- Học viên tự đánh giá nhận xét kết quả đã đạt được dựa theo danh sách bên dưới và giảng viên dùng danh sách này để đánh giá kết quả thực hành:
+
++ ESP32 kết nối WiFi thành công, Serial Monitor hiển thị địa chỉ IP.
+
++ Trang web load thành công từ PROGMEM, thanh trạng thái WebSocket chuyển sang "connected" (màu xanh).
+
++ Kéo thanh trượt, khớp J0 phản hồi đúng — độ trễ thấp (dưới 100ms trên mạng LAN).
+
++ Vùng log hiển thị đúng lệnh gửi đi và phản hồi từ ESP32.
+
++ Khi tắt ESP32, thanh trạng thái chuyển sang "disconnected" (màu đỏ) và trình duyệt tự kết nối lại sau 3 giây.
+
++ Giải thích được sự khác biệt giữa HTTP và WebSocket trong điều khiển thời gian thực.
+
+**Câu hỏi tự đánh giá**
+
+1. WebSocket khác HTTP ở điểm nào? Tại sao WebSocket phù hợp hơn cho điều khiển robot thời gian thực?
+
+2. Tại sao trang HTML được nhúng bằng PROGMEM thay vì lưu trong RAM? Nếu trang web lớn (>100KB), phương pháp PROGMEM còn phù hợp không?
+
+3. Hàm ws.cleanupClients() trong loop() làm nhiệm vụ gì? Nếu bỏ dòng này, điều gì xảy ra khi nhiều client kết nối/ngắt liên tục?
+
+**Giai đoạn 2: Web GUI 6 khớp hoàn chỉnh (SPIFFS)**
+
+Giai đoạn này nâng cấp từ 1 khớp lên 6 khớp, chuyển nội dung Web từ PROGMEM sang hệ thống tệp SPIFFS trên Flash. Cấu trúc code được tách module để dễ bảo trì.
+
+**Bước 1: Khởi tạo dự án**
+
+- Tạo project PlatformIO mới đặt tên RobotArm\_WebGUI\_GD2. Mở file platformio.ini, cấu hình giống Giai đoạn 1. Thêm thư mục data/ cùng cấp với src/ — đây là nơi chứa các file HTML/JS/CSS sẽ được upload lên SPIFFS.
+
+**Bước 2: Xác định modul, linh kiện cần dùng**
+
+Sử dụng hệ thống phần cứng từ Giai đoạn 1.
+
+**Bước 3: Kết nối các modul, linh kiện**
+
+Giữ nguyên kết nối phần cứng từ Giai đoạn 1.
+
+**Bước 4: Viết chương trình**
+
+- Cấu trúc firmware được tách module:
+
++ src/servo\_ctrl.h và servo\_ctrl.cpp — module điều khiển 6 servo: khởi tạo PCA9685, hàm moveServo(), moveAll(), homeAll(), printStatus().
+
++ src/ws\_handler.h và ws\_handler.cpp — module xử lý WebSocket: phân tích lệnh plain-text (M, G, T, H, A, S, W), phản hồi client.
+
++ src/main.cpp — file chính: khởi tạo SPIFFS, servo, WiFi, WebSocket, HTTP Server.
+
+- Cơ sở lý thuyết về SPIFFS (SPI Flash File System):
+
++ SPIFFS là hệ thống tệp đơn giản trên bộ nhớ Flash nội bộ của ESP32. Nó cho phép lưu trữ các file (HTML, JS, CSS, hình ảnh) tách biệt khỏi firmware, giúp cập nhật giao diện Web mà không cần biên dịch lại firmware.
+
++ PlatformIO hỗ trợ upload file từ thư mục data/ lên SPIFFS bằng lệnh pio run -t uploadfs.
+
++ Trong firmware, SPIFFS được khởi tạo bằng SPIFFS.begin(true) và phục vụ file qua server.serveStatic("/", SPIFFS, "/").
+
+- Nội dung thư mục data/ bao gồm:
+
++ data/index.html — trang chính với 6 thanh trượt, nút HOME/STOP/STATUS, vùng log.
+
++ data/app.js — mã JavaScript WebSocket: kết nối, gửi lệnh, nhận phản hồi, cập nhật giao diện.
+
++ data/style.css — định dạng giao diện dark-mode chuyên nghiệp.
+
+- file main.cpp: khởi tạo theo thứ tự Serial → SPIFFS → Servo (PCA9685) → WiFi → WebSocket → HTTP Server. Khi client truy cập GET "/", server trả về file /index.html từ SPIFFS. Các file tĩnh (JS, CSS) được phục vụ tự động qua server.serveStatic().
+
+**Bước 5: Vận hành và kiểm thử**
+
+- Biên dịch firmware: Ctrl+Alt+B. Nạp firmware: Ctrl+Alt+U.
+
+- Upload file web lên SPIFFS: mở Terminal trong VS Code, gõ pio run -t uploadfs (bước này upload toàn bộ thư mục data/ lên bộ nhớ Flash ESP32).
+
+- Mở Serial Monitor, nhấn Reset. Kết quả mong đợi: "[SPIFFS] Khoi tao thanh cong" → liệt kê các file đã upload → "[WiFi] Ket noi thanh cong!" → "[Server] HTTP + WebSocket Server da khoi dong".
+
+- Mở trình duyệt, nhập IP ESP32. Trang web hiển thị 6 thanh trượt cho 6 khớp J0–J5, nút HOME, STOP, STATUS.
+
+- Kiểm thử từng khớp:
+
++ Kéo thanh trượt J0 → đế robot xoay theo. Kéo J5 → kẹp mở/đóng.
+
++ Nhấn HOME → tất cả 6 khớp về vị trí mặc định.
+
++ Nhấn STATUS → vùng log hiển thị STA:a0,a1,a2,a3,a4,a5.
+
+**Bước 6: Rút ra nhận xét, kết luận**
+
+- Học viên tự đánh giá nhận xét kết quả đã đạt được dựa theo danh sách bên dưới và giảng viên dùng danh sách này để đánh giá kết quả thực hành:
+
++ SPIFFS khởi tạo thành công, liệt kê đúng các file HTML/JS/CSS đã upload.
+
++ Trang web load nhanh, hiển thị đủ 6 thanh trượt và các nút chức năng.
+
++ Điều khiển từng khớp J0–J5 qua thanh trượt, robot phản hồi đúng.
+
++ Nút HOME đưa tất cả khớp về vị trí mặc định.
+
++ Giải thích được sự khác biệt giữa PROGMEM (Giai đoạn 1) và SPIFFS (Giai đoạn 2): PROGMEM nhúng HTML vào firmware (tốc độ nhanh, nhưng phải biên dịch lại khi sửa Web); SPIFFS tách file riêng (linh hoạt hơn, upload nhanh bằng pio run -t uploadfs).
+
+**Câu hỏi tự đánh giá**
+
+1. SPIFFS khác PROGMEM ở điểm nào? Trường hợp nào nên dùng PROGMEM, trường hợp nào nên dùng SPIFFS?
+
+2. Lệnh pio run -t uploadfs làm gì? Nếu quên chạy lệnh này, trình duyệt hiển thị gì khi truy cập IP ESP32?
+
+3. Tại sao code tách module (servo\_ctrl, ws\_handler, main) tốt hơn viết tất cả trong 1 file?
+
+**Giai đoạn 3: WiFiManager + JSON Protocol + Pose Save/Load**
+
+Giai đoạn cuối nâng cấp hệ thống lên cấp độ chuyên nghiệp: WiFiManager cho phép cấu hình WiFi qua Captive Portal (không hardcode SSID/mật khẩu), giao thức WebSocket nâng cấp lên JSON, và tính năng lưu/tải tư thế (Pose) vào bộ nhớ Flash NVS.
+
+**Bước 1: Khởi tạo dự án**
+
+- Tạo project PlatformIO mới đặt tên RobotArm\_WebGUI\_GD3. Mở file platformio.ini:
+
+[env:esp32dev]
+
+platform = espressif32
+
+board = esp32dev
+
+framework = arduino
+
+upload\_speed = 921600
+
+monitor\_speed = 115200
+
+upload\_port = COM9
+
+board\_build.partitions = min\_spiffs.csv
+
+lib\_deps =
+
+esphome/AsyncTCP
+
+ottowinter/ESPAsyncWebServer-esphome
+
+adafruit/Adafruit PWM Servo Driver Library
+
+tzapu/WiFiManager
+
+bblanchon/ArduinoJson
+
+**Bước 2: Xác định modul, linh kiện cần dùng**
+
+Sử dụng hệ thống phần cứng từ Giai đoạn 2.
+
+**Bước 3: Kết nối các modul, linh kiện**
+
+Giữ nguyên kết nối phần cứng từ Giai đoạn 2.
+
+**Bước 4: Viết chương trình**
+
+- Firmware mở rộng từ Giai đoạn 2 với các thư viện mới:
+
++ WiFiManager (tzapu/WiFiManager): thay vì hardcode SSID/mật khẩu WiFi trong code, WiFiManager tạo một Access Point tên "RobotArm-Config" khi ESP32 chưa có credentials. Người dùng kết nối điện thoại/laptop vào AP này, mở trình duyệt → 192.168.4.1 → nhập SSID và mật khẩu WiFi → ESP32 lưu vào NVS và tự kết nối từ lần sau.
+
++ ArduinoJson (bblanchon/ArduinoJson): nâng cấp giao thức WebSocket từ plain-text ("M 0 90") lên JSON ({"cmd":"M","joint":0,"angle":90}). JSON dễ mở rộng, dễ parse, và hỗ trợ truyền dữ liệu phức tạp (mảng góc, trạng thái lỗi).
+
++ Preferences (NVS): sử dụng bộ nhớ NVS (Non-Volatile Storage) trong Flash ESP32 để lưu tối đa 5 tư thế (Pose). Mỗi tư thế là chuỗi "a0,a1,a2,a3,a4,a5" được lưu với key "pose0"–"pose4".
+
+- Chức năng mới trong firmware:
+
++ Hàm pose\_save(slot): lưu góc hiện tại của 6 khớp vào NVS Flash tại slot chỉ định (0–4).
+
++ Hàm pose\_load(slot): đọc tư thế từ NVS Flash và điều khiển servo đến các góc đã lưu.
+
++ API endpoint: POST /api/pose/save body {"slot":0} và POST /api/pose/load body {"slot":0} để Web GUI gọi lưu/tải tư thế.
+
++ Hàm checkResetButton(): kiểm tra nút BOOT (GPIO0) — giữ hơn 3 giây khi khởi động sẽ xóa credentials WiFi đã lưu, buộc ESP32 tạo lại AP cấu hình.
+
+- Giao thức WebSocket JSON (thay thế plain-text ở Giai đoạn 1-2):
+
++ Client gửi: {"cmd":"M","joint":0,"angle":90} hoặc {"cmd":"A","angles":[90,70,90,90,90,90]} hoặc {"cmd":"H"} hoặc {"cmd":"T"}
+
++ ESP32 phản hồi: {"ok":true,"joint":0,"angle":90} hoặc {"ok":true,"angles":[90,70,90,90,90,90]} hoặc {"ok":false,"error":"out\_of\_range"}
+
+**Bước 5: Vận hành và kiểm thử**
+
+- Biên dịch, nạp firmware và upload SPIFFS (pio run -t uploadfs).
+
+- Lần đầu sử dụng (chưa có WiFi đã lưu):
+
++ ESP32 khởi động → bật AP tên "RobotArm-Config", mật khẩu "robotarm123".
+
++ Kết nối điện thoại/laptop vào AP này → mở trình duyệt → 192.168.4.1 → nhập SSID và mật khẩu WiFi nhà/phòng lab → nhấn Save.
+
++ ESP32 tự kết nối WiFi và hiển thị IP trên Serial Monitor.
+
+- Lần sau: ESP32 tự kết nối WiFi đã lưu mà không cần cấu hình lại.
+
+- Reset credentials: giữ nút BOOT (GPIO0) hơn 3 giây khi khởi động → Serial hiển thị "DA XOA!" → ESP32 restart và bật AP cấu hình lại.
+
+- Kiểm thử tính năng Pose:
+
++ Điều khiển robot đến tư thế mong muốn qua thanh trượt.
+
++ Trên Web GUI, nhấn nút Save Pose 0 → tư thế được lưu vào Flash.
+
++ Đưa robot về Home. Nhấn nút Load Pose 0 → robot tự di chuyển về tư thế đã lưu.
+
++ Tắt nguồn ESP32, bật lại → nhấn Load Pose 0 → tư thế vẫn còn (lưu trong Flash, không mất khi mất điện).
+
+**Bước 6: Rút ra nhận xét, kết luận**
+
+- Học viên tự đánh giá nhận xét kết quả đã đạt được dựa theo danh sách bên dưới và giảng viên dùng danh sách này để đánh giá kết quả thực hành:
+
++ WiFiManager hoạt động đúng: lần đầu bật AP cấu hình, lần sau tự kết nối.
+
++ Nút BOOT giữ 3 giây xóa credentials thành công, ESP32 bật AP cấu hình lại.
+
++ Giao thức JSON hoạt động đúng: gửi {"cmd":"M","joint":0,"angle":45} → ESP32 phản hồi {"ok":true}.
+
++ Lưu và tải tư thế Pose thành công, dữ liệu không mất khi tắt nguồn.
+
++ Giải thích được ưu điểm của WiFiManager so với hardcode WiFi: linh hoạt, người dùng cuối tự cấu hình mà không cần lập trình.
+
++ So sánh được 3 kiến trúc điều khiển robot:
+
+| Kiến trúc | Bài | Giao thức | Phạm vi | Ưu điểm |
+|---|---|---|---|---|
+| Serial USB | BTH 4-5 | Plain-text 115200 baud | Cục bộ (cáp USB) | Đơn giản, không cần WiFi |
+| IoT Cloud (Blynk) | BTH 6 | MQTT/Blynk | Toàn cầu (Internet) | Điều khiển từ xa bất kỳ đâu |
+| Web LAN (WebSocket) | BTH 7 | WebSocket (LAN) | Nội bộ (cùng WiFi) | Không phụ thuộc cloud, độ trễ thấp |
+
+**Câu hỏi tự đánh giá**
+
+1. WiFiManager hoạt động như thế nào? Mô tả luồng khi ESP32 chưa có credentials WiFi.
+
+2. Tại sao giao thức JSON tốt hơn plain-text trong việc mở rộng hệ thống? Cho ví dụ cụ thể.
+
+3. NVS (Non-Volatile Storage) khác SPIFFS ở điểm nào? Tại sao Pose được lưu trong NVS thay vì SPIFFS?
+
+**Bài tập mở rộng**
+
+1. Thêm tính năng Auto-reconnect WebSocket trên phía client (JavaScript): khi mất kết nối, tự kết nối lại sau 3 giây.
+
+2. Mở rộng số lượng Pose từ 5 lên 10 và thêm chức năng đặt tên cho từng Pose.
+
+3. Tích hợp thêm OTA (Over-The-Air Update) để cập nhật firmware ESP32 qua WiFi mà không cần cáp USB.
+
+4. Thiết kế giao diện Web responsive (tương thích cả desktop và mobile) bằng CSS media queries.
+
+**8. Bài thực hành 8: Digital Twin 3D và Web Serial API**
+
+**a. Mục tiêu**
+
+- Đáp ứng CĐR 2.1 và 2.2 môn Mạng IoT (ĐVT 2.8.7); CĐR 2.1 và 2.2 môn Kiến trúc và giao thức trong IoT (ĐVT 2.10.7); CĐR 2.1 và 2.2 môn Các hệ thống và giải pháp IoT tiên tiến (ĐVT 2.11.7); CĐR 2.1 và 2.2 môn IoT và ứng dụng (ĐCN 2.3.5), cụ thể:
+
++ Hiểu và sử dụng được Web Serial API — công nghệ cho phép trình duyệt web (Chrome/Edge) giao tiếp trực tiếp với cổng COM/Serial qua cáp USB mà không cần cài đặt phần mềm hay driver bổ sung.
+
++ Xây dựng được giao diện Web điều khiển robot hoàn chỉnh chạy offline (mở file HTML trực tiếp từ ổ cứng, không cần Web Server ESP32).
+
++ Tích hợp được mô hình 3D (Digital Twin) của cánh tay robot trên trình duyệt sử dụng thư viện Three.js, đồng bộ chuyển động 3D với robot thật theo thời gian thực.
+
++ Xây dựng được tính năng Teach & Play (Sequence Recorder): ghi lại chuỗi tư thế và phát lại tự động qua giao diện Web.
+
++ Tích hợp được ESP32 REST API Server phục vụ giao diện 3D Digital Twin qua WiFi LAN.
+
++ So sánh được bốn kiến trúc điều khiển robot: Serial USB (Bài 4-5), IoT Cloud (Bài 6), Web LAN WebSocket (Bài 7) và Web Serial/REST + 3D (Bài 8).
+
+**b. Các bước tiến hành**
+
+Bài thực hành 8 được triển khai qua hai giai đoạn. Giai đoạn 1 tập trung vào Web Serial API (không cần WiFi), giai đoạn 2 tích hợp đầy đủ 3D Digital Twin, Sequence Recorder và REST API qua WiFi.
+
+**Bảng 8.1.** Phân bổ nội dung cụ thể trong từng giai đoạn của bài thực hành 8
+
+| **Giai đoạn**                             | **Nội dung chính**                           | **Kết quả đạt được**                                       |
+|-------------------------------------------|----------------------------------------------|-------------------------------------------------------------|
+| GĐ1: Web Serial API                      | HTML/JS + Web Serial API + 6 thanh trượt     | Điều khiển robot thẳng từ trình duyệt qua cáp USB           |
+| GĐ2: 3D Digital Twin + Sequence Recorder | Three.js 3D + REST API + Sequence Recorder   | Mô phỏng 3D đồng bộ thời gian thực + Teach & Play tự động  |
+
+**Giai đoạn 1: Web Serial API — Điều khiển robot từ trình duyệt qua cáp USB**
+
+Giai đoạn này giới thiệu Web Serial API — một công nghệ Web hiện đại cho phép trình duyệt (Google Chrome/Microsoft Edge) truy cập trực tiếp cổng COM/Serial của máy tính. Người dùng chỉ cần cắm cáp USB vào ESP32 và mở file HTML trên trình duyệt là có thể điều khiển robot, không cần cài Python, không cần WiFi, không cần Web Server.
+
+**Bước 1: Khởi tạo dự án**
+
+- Firmware: sử dụng firmware từ Bài thực hành 4 Giai đoạn 3 (đã hỗ trợ giao thức Serial: M, G, T, H, S, A, W). Không cần thay đổi firmware.
+
+- Web GUI: tạo thư mục web-serial-gui chứa 3 file: index.html, app.js, style.css.
+
+- Lưu ý: Giai đoạn này không cần PlatformIO cho phần Web — chỉ cần mở file index.html bằng trình duyệt Chrome/Edge.
+
+**Bước 2: Xác định modul, linh kiện cần dùng**
+
+Sử dụng hệ thống phần cứng từ Bài thực hành 4, kết nối ESP32 với máy tính qua cáp USB.
+
+**Bước 3: Kết nối các modul, linh kiện**
+
+Giữ nguyên kết nối phần cứng. Đảm bảo ESP32 đã nạp firmware Bài 4 Giai đoạn 3 và cáp USB đã cắm vào máy tính.
+
+**Bước 4: Viết chương trình**
+
+- Cơ sở lý thuyết về Web Serial API:
+
++ Web Serial API là một Web API cho phép các trang web đọc/ghi dữ liệu từ/tới thiết bị Serial (cổng COM) thông qua trình duyệt. API này yêu cầu trình duyệt hỗ trợ (Chrome 89+ hoặc Edge 89+) và chỉ hoạt động trên HTTPS hoặc localhost (bao gồm cả file:// mở trực tiếp).
+
++ Luồng hoạt động: navigator.serial.requestPort() → chọn cổng COM → port.open({baudRate: 115200}) → port.writable.getWriter() để ghi lệnh → port.readable.pipeTo() để đọc phản hồi.
+
++ Ưu điểm so với Serial Monitor: giao diện đồ họa trực quan (thanh trượt, nút bấm), không cần cài phần mềm, chạy trên bất kỳ máy tính nào có Chrome/Edge.
+
+- Tạo file index.html: trang web chứa 6 thanh trượt điều khiển 6 khớp, nút HOME, STOP, SYNC, dropdown chọn baud rate, nút Connect/Disconnect, vùng Console hiển thị log TX/RX.
+
+- Tạo file app.js: logic kết nối Web Serial, hàm connectSerial() mở cổng COM, hàm readLoop() đọc phản hồi từ ESP32 (parse STA:a0,a1,...,a5 để đồng bộ thanh trượt), hàm sendCommand() gửi lệnh text qua Serial, hàm initSliders() tạo 6 thanh trượt với event listener gửi "M \<id\> \<angle\>" khi kéo.
+
+**Bước 5: Vận hành và kiểm thử**
+
+- Đảm bảo firmware Bài 4 GĐ3 đã nạp vào ESP32 và cáp USB đã cắm.
+
+- Đóng Serial Monitor trong VS Code (vì cổng COM chỉ cho phép 1 ứng dụng truy cập).
+
+- Mở file index.html bằng Google Chrome hoặc Microsoft Edge (click đúp file hoặc kéo thả vào trình duyệt).
+
+- Chọn baud rate 115200 từ dropdown. Nhấn nút "Connect via USB".
+
+- Trình duyệt hiển thị hộp thoại chọn cổng COM → chọn cổng ESP32 → nhấn Connect.
+
+- Trạng thái chuyển sang "Connected" (đèn xanh). Kéo thanh trượt J0 → robot xoay theo.
+
+- Console hiển thị: "TX: M 0 45" và "RX: OK".
+
+- Nhấn SYNC → Console hiển thị "TX: T" và "RX: STA:90,70,90,90,90,90" → thanh trượt tự đồng bộ với góc hiện tại của robot.
+
+- Nhấn HOME → tất cả khớp về Home. Nhấn STOP → robot dừng khẩn cấp.
+
+**Bước 6: Rút ra nhận xét, kết luận**
+
+- Học viên tự đánh giá nhận xét kết quả đã đạt được dựa theo danh sách bên dưới và giảng viên dùng danh sách này để đánh giá kết quả thực hành:
+
++ Trình duyệt hiển thị hộp thoại chọn cổng COM thành công (chứng minh Web Serial API hoạt động).
+
++ Kết nối Serial qua trình duyệt, thanh trượt điều khiển robot đúng.
+
++ Console hiển thị đúng TX/RX, phản hồi firmware khớp với giao thức Bài 4.
+
++ Nút SYNC đồng bộ đúng giá trị thanh trượt với góc thực tế của robot.
+
++ Giải thích được tại sao Web Serial API là một bước tiến so với Serial Monitor: giao diện trực quan, không cần IDE, bất kỳ ai có Chrome/Edge đều sử dụng được.
+
++ Giải thích được tại sao phải đóng Serial Monitor trước khi dùng Web Serial: cổng COM chỉ cho phép 1 ứng dụng truy cập tại một thời điểm.
+
+**Câu hỏi tự đánh giá**
+
+1. Web Serial API yêu cầu trình duyệt nào? Tại sao Firefox không hỗ trợ? (Gợi ý: tìm hiểu về Web API security model)
+
+2. Tại sao file HTML mở trực tiếp (file://) vẫn sử dụng được Web Serial API mà không cần HTTPS server?
+
+3. So sánh 3 cách giao tiếp Serial với ESP32: Serial Monitor (IDE), Python pyserial (Bài 5), Web Serial API (Bài 8). Ưu nhược điểm của từng cách?
+
+**Giai đoạn 2: 3D Digital Twin + Sequence Recorder + REST API**
+
+Giai đoạn này là phần nâng cao nhất của toàn bộ khóa học, tích hợp mô hình 3D (Digital Twin) trên trình duyệt, tính năng Teach & Play (Sequence Recorder) và giao tiếp qua REST API với ESP32 Web Server qua WiFi LAN. Giao diện hỗ trợ đa phương thức kết nối: Web Serial (USB) và REST API (WiFi) với chế độ Mock fallback.
+
+**Bước 1: Khởi tạo dự án**
+
+- Firmware: tạo project PlatformIO cho ESP32 Web Server phục vụ REST API (dựa trên kiến trúc firmware nâng cao). File SPIFFS chứa giao diện 3D.
+
+- Hoặc: sử dụng firmware đã cung cấp trong thư mục bai-thuc-hanh-8/giai-doan-2/ (đã bao gồm cả src/ và data/).
+
+**Bước 2: Xác định modul, linh kiện cần dùng**
+
+Sử dụng hệ thống phần cứng từ Bài thực hành 4. Đảm bảo ESP32 trong vùng phủ sóng WiFi.
+
+**Bước 3: Kết nối các modul, linh kiện**
+
+Giữ nguyên kết nối phần cứng từ Bài thực hành 4.
+
+**Bước 4: Viết chương trình**
+
+- Cơ sở lý thuyết về Digital Twin:
+
++ Digital Twin (Bản sao kỹ thuật số) là mô hình ảo của một đối tượng vật lý, được đồng bộ dữ liệu theo thời gian thực. Trong bài này, cánh tay robot 3D trên màn hình là Digital Twin của robot thật — khi kéo thanh trượt hoặc nhận dữ liệu từ robot, mô hình 3D xoay theo đúng như robot thật.
+
++ Three.js là thư viện JavaScript mã nguồn mở cho đồ họa 3D trên trình duyệt (sử dụng WebGL). File thư viện được tải từ CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+
+- Cấu trúc mô hình 3D cánh tay robot (trong app.js):
+
++ Mỗi khớp được biểu diễn bằng một THREE.Group đóng vai trò pivot (trục xoay). Các Group được lồng vào nhau theo thứ tự J0 → J1 → J2 → J3 → J4 → J5, tạo thành chuỗi động học (kinematic chain): khi xoay J0, toàn bộ cánh tay bên trên đều xoay theo.
+
++ Mỗi phần cơ thể robot được vẽ bằng THREE.BoxGeometry (hình hộp chữ nhật) với kích thước tương ứng: J0 (đế 40×20×40), J1 (vai 20×80×20), J2 (khuỷu 15×70×15), J3 (cổ tay 10×50×10), J4 (xoay cổ 8×30×8).
+
++ Khớp J5 (Gripper) được vẽ đặc biệt với 3 phần: thanh ngang (đế kẹp) và 2 ngón kẹp trái/phải. Khi thay đổi góc J5, hai ngón kẹp dịch chuyển ra/vào để mô phỏng mở/đóng.
+
++ Hàm updateArmAngles() đọc state.angles[0..5] và ánh xạ sang rotation của từng Group: J0 xoay trục Y (xoay nền), J1-J3 xoay trục Z (nâng/hạ), J4 xoay trục Y (xoay cổ tay).
+
+- Tính năng Sequence Recorder (Teach & Play):
+
++ Nút "Add Frame": lưu trạng thái góc hiện tại của 6 khớp vào mảng state.sequence.
+
++ Nút "Play": lặp qua từng frame trong sequence, gửi lệnh A \<a0\> \<a1\> ... \<a5\> xuống robot (hoặc Mock), chờ 1 giây giữa mỗi frame.
+
++ Nút "Stop": dừng playback giữa chừng.
+
++ Ứng dụng: ghi lại chuỗi thao tác pick-and-place, sau đó phát lại tự động — đây là nguyên lý cơ bản của "dạy robot" (Teaching Pendant) trong công nghiệp.
+
+- Kết nối đa phương thức:
+
++ Chế độ Serial: giống Giai đoạn 1, dùng Web Serial API qua USB. Khi chọn "🔌 Serial Port" → nhấn Connect → chọn cổng COM.
+
++ Chế độ REST API: khi chọn "🌐 REST API" → nhập IP ESP32 (ví dụ http://192.168.1.105) → nhấn Connect → giao diện gửi lệnh qua HTTP POST/GET thay vì Serial.
+
++ Chế độ Mock: nếu không kết nối được (chưa có kit hoặc ESP32 offline), giao diện tự mô phỏng phản hồi để sinh viên có thể test giao diện và 3D.
+
+**Bước 5: Vận hành và kiểm thử**
+
+- Biên dịch và nạp firmware, upload SPIFFS: pio run -t uploadfs.
+
+- Mở Serial Monitor, nhấn Reset. Kết quả mong đợi: khởi tạo PCA9685, kết nối WiFi, hiển thị IP.
+
+- Mở trình duyệt, nhập IP ESP32. Trang web hiển thị:
+
++ Panel trái: mô hình 3D cánh tay robot (wireframe xanh cyan trên nền đen), nút Zoom In/Out.
+
++ Panel phải: 6 thanh trượt Manual Controls, nút HOME/STOP/SYNC.
+
++ Panel dưới: Sequence Recorder (nút Record, Play, Stop, Add Frame), Quick Actions (10 nút hành động nhanh), Command Console (log TX/RX).
+
+- Kiểm thử 3D Digital Twin:
+
++ Kéo thanh trượt J0 → mô hình 3D xoay đồng bộ, robot thật xoay theo.
+
++ Kéo J1 (Shoulder) → cánh tay 3D nâng/hạ.
+
++ Kéo J5 (Gripper) → ngàm kẹp 3D mở/đóng.
+
+- Kiểm thử Sequence Recorder:
+
++ Kéo thanh trượt đến tư thế 1 → nhấn "Add Frame". Kéo đến tư thế 2 → nhấn "Add Frame". Kéo đến tư thế 3 → nhấn "Add Frame".
+
++ Nhấn "▶ Play" → robot tự động thực hiện chuỗi 3 tư thế, mỗi tư thế cách nhau 1 giây. Console hiển thị "Playing Frame 1: A 90 120 130 90 90 60" → "Playing Frame 2: ..." → "Sequence playback complete."
+
++ Nhấn "⏹ Stop" giữa chừng → robot dừng tại frame hiện tại.
+
+- Kiểm thử Settings Modal:
+
++ Nhấn ⚙️ Settings → hộp thoại cấu hình hiện ra, cho phép thay đổi tên khớp, góc min/max/home.
+
++ Sửa J0 min = 30, max = 150, nhấn Save → thanh trượt J0 tự cập nhật phạm vi mới.
+
+**Bước 6: Rút ra nhận xét, kết luận**
+
+- Học viên tự đánh giá nhận xét kết quả đã đạt được dựa theo danh sách bên dưới và giảng viên dùng danh sách này để đánh giá kết quả thực hành:
+
++ Mô hình 3D hiển thị đúng cấu trúc cánh tay robot 6DOF, chuyển động đồng bộ với thanh trượt.
+
++ Khớp J5 (Gripper) mở/đóng ngàm kẹp chân thực trên mô hình 3D.
+
++ Sequence Recorder ghi đúng số frame, Play phát lại đúng thứ tự và gửi lệnh xuống robot.
+
++ Settings Modal cho phép thay đổi giới hạn góc và cập nhật giao diện ngay lập tức.
+
++ Chế độ Mock hoạt động đúng khi không có kit phần cứng — Console hiển thị "RX REST (MOCK): ...".
+
++ Giải thích được khái niệm Digital Twin và ứng dụng trong Industry 4.0.
+
++ Giải thích được cấu trúc kinematic chain trong Three.js: tại sao khi xoay J0, toàn bộ các khớp phía trên đều xoay theo.
+
++ So sánh được 4 kiến trúc điều khiển robot qua toàn bộ khóa học:
+
+| Kiến trúc | Bài | Giao thức | Giao diện | Phạm vi |
+|---|---|---|---|---|
+| Serial USB | BTH 4-5 | Plain-text Serial | Serial Monitor / Python GUI | Cục bộ (cáp USB) |
+| IoT Cloud | BTH 6 | MQTT/Blynk | Blynk Dashboard / Mobile | Toàn cầu (Internet) |
+| Web LAN | BTH 7 | WebSocket (LAN) | Web GUI 2D | Nội bộ (cùng WiFi) |
+| Web Serial + 3D | BTH 8 | Web Serial / REST API | Web GUI 3D Digital Twin | Cục bộ (USB) / LAN (WiFi) |
+
+**Câu hỏi tự đánh giá**
+
+1. Digital Twin là gì? Trong bài này, mối liên hệ giữa mô hình 3D trên trình duyệt và robot thật được thiết lập thông qua cơ chế nào?
+
+2. Tại sao cánh tay robot 3D được xây dựng bằng cách lồng các THREE.Group vào nhau (parent-child)? Nếu tất cả các phần cơ thể đều là con trực tiếp của scene (không lồng), điều gì xảy ra khi xoay J0?
+
+3. So sánh Sequence Recorder trong Bài 8 với lệnh gắp vật thể tuần tự trong Bài 4 Giai đoạn 3. Ưu điểm của Sequence Recorder là gì?
+
+4. Trong chế độ REST API, lệnh "M 0 90" được gửi dưới dạng HTTP POST đến endpoint nào? So sánh với gửi qua WebSocket (Bài 7) và Serial (Bài 4).
+
+**Bài tập mở rộng**
+
+1. Thay đổi mô hình 3D từ wireframe (đường viền) sang solid (đặc) bằng cách bỏ thuộc tính wireframe: true trong MeshPhongMaterial. Thêm màu sắc khác nhau cho từng phần cánh tay.
+
+2. Tích hợp OrbitControls của Three.js để cho phép người dùng xoay, zoom góc nhìn 3D bằng chuột.
+
+3. Thêm tính năng Export/Import Sequence: xuất chuỗi tư thế ra file JSON, import lại từ file để chia sẻ giữa các nhóm.
+
+4. Kết hợp Bài 7 (WebSocket) và Bài 8 (3D): tạo giao diện 3D Digital Twin giao tiếp qua WebSocket thay vì REST API, so sánh hiệu suất và độ trễ.

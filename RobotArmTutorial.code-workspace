@@ -37,6 +37,26 @@
             "name": "BTH 6 - Giai doan 3 (Hoan thien IoT)"
         },
         {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-1",
+            "name": "BTH 7 - Giai doan 1 (WiFi + WebSocket 1 Servo)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-2",
+            "name": "BTH 7 - Giai doan 2 (Web GUI 6 Khop SPIFFS)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-7/giai-doan-3",
+            "name": "BTH 7 - Giai doan 3 (WiFiManager + JSON + Pose)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-8/giai-doan-1",
+            "name": "BTH 8 - Giai doan 1 (Web Serial API)"
+        },
+        {
+            "path": "robot-arm-source-code/bai-thuc-hanh-8/giai-doan-2",
+            "name": "BTH 8 - Giai doan 2 (3D Digital Twin + REST API)"
+        },
+        {
             "path": ".",
             "name": "[Root] Tai lieu & Prompt"
         }

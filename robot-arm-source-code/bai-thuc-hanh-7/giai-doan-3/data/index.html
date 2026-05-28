@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Arm 6DOF — Web Controller (Giai Doan 3)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">&#x1F916; <span>Robot Arm</span> Web GUI</div>
+      <div id="ws-status" class="badge disconnected">
+        <span class="dot"></span>
+        <span id="ws-label">Dang ket noi...</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Card thong tin giai doan -->
+    <div class="info-card">
+      <p>&#x1F4BB; <strong>Bai Thuc Hanh 7 - Giai Doan 3</strong>:
+        Nang cao — WiFiManager, JSON Protocol, Pose Save/Load.
+        <br>&#x1F4A1; Giao thuc <strong>JSON</strong> thay vi plain-text:
+        <code>{"cmd":"M","joint":0,"angle":90}</code>
+      </p>
+    </div>
+
+    <!-- Grid 6 servo -->
+    <div class="servo-grid" id="servo-grid"></div>
+
+    <!-- Panel nut chuc nang chinh -->
+    <div class="action-panel">
+      <button class="btn btn-home" onclick="sendHome()">&#x1F3E0; HOME Tat Ca</button>
+      <button class="btn btn-status" onclick="sendStatus()">&#x1F4CA; STATUS</button>
+      <button class="btn btn-stop" onclick="sendStop()">&#x26D4; EMERGENCY STOP</button>
+    </div>
+
+    <!-- Panel Pose Save/Load (tinh nang moi giai doan 3) -->
+    <div class="pose-panel">
+      <div class="pose-header">&#x1F4BE; Pose Save / Load (5 vi tri)</div>
+      <div class="pose-slots" id="pose-slots">
+        <!-- Tao tu dong boi JavaScript -->
+      </div>
+    </div>
+
+    <!-- Log panel -->
+    <div class="log-section">
+      <div class="log-header">
+        <span>&#x1F4DC; Log giao tiep (JSON)</span>
+        <button class="btn-clear" onclick="clearLog()">Xoa</button>
+      </div>
+      <div id="log-panel"></div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
